@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinema Booking System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .feature-card {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+        }
+        .feature-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-xl">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-film text-blue-500 text-2xl"></i>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                        Cinema Booking System
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="../App.tsx" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero-gradient py-20">
+        <div class="container mx-auto px-4 text-center">
+            <div class="float-animation mb-8">
+                <i class="fas fa-ticket-alt text-6xl text-white"></i>
+            </div>
+            <h2 class="text-4xl md:text-6xl font-bold mb-4">
+                Book Your Favorite Movies
+            </h2>
+            <p class="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
+                Experience the magic of cinema with our seamless booking system. Browse movies, select seats, and enjoy the show!
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="movie-listing.html" class="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3 rounded-lg font-semibold transition">
+                    <i class="fas fa-film mr-2"></i>Browse Movies
+                </a>
+                <a href="../App.tsx" class="bg-blue-500 hover:bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold transition">
+                    <i class="fas fa-user mr-2"></i>Login / Register
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="container mx-auto px-4 py-16">
+        <h3 class="text-3xl font-bold text-center mb-12">Complete Booking Experience</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <!-- Movie Listing -->
+            <div class="feature-card bg-gray-800 rounded-xl p-6">
+                <div class="text-center mb-4">
+                    <i class="fas fa-film text-4xl text-blue-500"></i>
+                </div>
+                <h4 class="text-xl font-bold mb-3">Browse Movies</h4>
+                <p class="text-gray-400 mb-4">Explore our collection with advanced search and filtering options</p>
+                <a href="movie-listing.html" class="text-blue-400 hover:text-blue-300 transition">
+                    Explore Movies →
+                </a>
+            </div>
+
+            <!-- Movie Details -->
+            <div class="feature-card bg-gray-800 rounded-xl p-6">
+                <div class="text-center mb-4">
+                    <i class="fas fa-info-circle text-4xl text-green-500"></i>
+                </div>
+                <h4 class="text-xl font-bold mb-3">Movie Details</h4>
+                <p class="text-gray-400 mb-4">View complete movie information and available showtimes</p>
+                <span class="text-gray-500">Available from movie listing</span>
+            </div>
+
+            <!-- Seat Selection -->
+            <div class="feature-card bg-gray-800 rounded-xl p-6">
+                <div class="text-center mb-4">
+                    <i class="fas fa-couch text-4xl text-purple-500"></i>
+                </div>
+                <h4 class="text-xl font-bold mb-3">Seat Selection</h4>
+                <p class="text-gray-400 mb-4">Choose your seats and confirm your booking with ease</p>
+                <span class="text-gray-500">Available from movie details</span>
+            </div>
+
+            <!-- Booking Confirmation -->
+            <div class="feature-card bg-gray-800 rounded-xl p-6">
+                <div class="text-center mb-4">
+                    <i class="fas fa-check-circle text-4xl text-yellow-500"></i>
+                </div>
+                <h4 class="text-xl font-bold mb-3">Booking Confirmation</h4>
+                <p class="text-gray-400 mb-4">Get your tickets with QR codes and booking details</p>
+                <span class="text-gray-500">Available after booking</span>
+            </div>
+
+            <!-- My Bookings -->
+            <div class="feature-card bg-gray-800 rounded-xl p-6">
+                <div class="text-center mb-4">
+                    <i class="fas fa-list text-4xl text-red-500"></i>
+                </div>
+                <h4 class="text-xl font-bold mb-3">My Bookings</h4>
+                <p class="text-gray-400 mb-4">Manage your bookings and cancel if needed</p>
+                <a href="my-bookings.html" class="text-blue-400 hover:text-blue-300 transition">
+                    View Bookings →
+                </a>
+            </div>
+
+            <!-- Search & Filter -->
+            <div class="feature-card bg-gray-800 rounded-xl p-6">
+                <div class="text-center mb-4">
+                    <i class="fas fa-search text-4xl text-orange-500"></i>
+                </div>
+                <h4 class="text-xl font-bold mb-3">Search & Filter</h4>
+                <p class="text-gray-400 mb-4">Find movies quickly with advanced search options</p>
+                <a href="search-filter-bar.html" class="text-blue-400 hover:text-blue-300 transition">
+                    Try Search →
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="container mx-auto px-4 py-16">
+        <h3 class="text-3xl font-bold text-center mb-12">How It Works</h3>
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div class="text-center">
+                <div class="bg-blue-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-2xl font-bold">1</span>
+                </div>
+                <h4 class="font-semibold mb-2">Login</h4>
+                <p class="text-gray-400 text-sm">Sign in to your account or create a new one</p>
+            </div>
+            <div class="text-center">
+                <div class="bg-green-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-2xl font-bold">2</span>
+                </div>
+                <h4 class="font-semibold mb-2">Browse Movies</h4>
+                <p class="text-gray-400 text-sm">Search and select your favorite movies</p>
+            </div>
+            <div class="text-center">
+                <div class="bg-purple-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-2xl font-bold">3</span>
+                </div>
+                <h4 class="font-semibold mb-2">Book Tickets</h4>
+                <p class="text-gray-400 text-sm">Select showtime and choose your seats</p>
+            </div>
+            <div class="text-center">
+                <div class="bg-yellow-500 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span class="text-2xl font-bold">4</span>
+                </div>
+                <h4 class="font-semibold mb-2">Enjoy Show</h4>
+                <p class="text-gray-400 text-sm">Get your tickets and enjoy the movie</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700">
+        <div class="container mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h4 class="font-bold mb-4">Quick Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="movie-listing.html" class="text-gray-400 hover:text-white transition">Browse Movies</a></li>
+                        <li><a href="my-bookings.html" class="text-gray-400 hover:text-white transition">My Bookings</a></li>
+                        <li><a href="../App.tsx" class="text-gray-400 hover:text-white transition">Login</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Features</h4>
+                    <ul class="space-y-2">
+                        <li class="text-gray-400">Real-time Search</li>
+                        <li class="text-gray-400">Seat Selection</li>
+                        <li class="text-gray-400">Booking Management</li>
+                        <li class="text-gray-400">Mobile Friendly</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold mb-4">Contact</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li>📧 support@cinemabooking.com</li>
+                        <li>📞 1800-123-4567</li>
+                        <li>🕐 24/7 Support</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2026 Cinema Booking System. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Details - Cinema Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .backdrop-container {
+            position: relative;
+            height: 400px;
+            overflow: hidden;
+        }
+        .backdrop-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.8) 100%);
+            z-index: 1;
+        }
+        .backdrop-image {
+            transition: transform 0.3s ease;
+        }
+        .backdrop-container:hover .backdrop-image {
+            transform: scale(1.05);
+        }
+        .poster-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .show-row {
+            transition: all 0.3s ease;
+        }
+        .show-row:hover {
+            background: rgba(59, 130, 246, 0.1);
+            transform: translateX(4px);
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .genre-badge {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .status-now-showing {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        .seat-indicator {
+            transition: all 0.3s ease;
+        }
+        .seat-high {
+            color: #22c55e;
+        }
+        .seat-medium {
+            color: #f59e0b;
+        }
+        .seat-low {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-xl sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <button onclick="goBack()" class="text-gray-300 hover:text-white transition">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </button>
+                    <h1 class="text-xl font-bold">Movie Details</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="goToMovies()" class="text-gray-300 hover:text-white transition">
+                        <i class="fas fa-film mr-2"></i>All Movies
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="container mx-auto px-4 py-8">
+        <div class="animate-pulse">
+            <div class="skeleton h-96 rounded-lg mb-8"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="skeleton h-96 rounded-lg"></div>
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="skeleton h-8 rounded"></div>
+                    <div class="skeleton h-4 rounded w-3/4"></div>
+                    <div class="skeleton h-4 rounded w-1/2"></div>
+                    <div class="skeleton h-32 rounded"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden container mx-auto px-4 py-16 text-center">
+        <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+        <h3 class="text-xl font-semibold mb-2">Movie Not Found</h3>
+        <p class="text-gray-400 mb-4">Unable to load movie details. Please try again.</p>
+        <button onclick="loadMovieDetails()" class="bg-blue-500 hover:bg-blue-600 px-6 py-2 rounded-lg transition">
+            <i class="fas fa-redo mr-2"></i>Retry
+        </button>
+    </div>
+
+    <!-- Movie Content -->
+    <div id="movieContent" class="hidden">
+        <!-- Backdrop & Header Section -->
+        <section class="backdrop-container">
+            <img id="backdropImage" src="" alt="" class="backdrop-image w-full h-full object-cover">
+            <div class="absolute inset-0 z-10 flex items-end">
+                <div class="container mx-auto px-4 pb-8">
+                    <div class="flex flex-col md:flex-row items-end gap-8">
+                        <div class="poster-container w-48 md:w-64 flex-shrink-0">
+                            <img id="posterImage" src="" alt="" class="w-full rounded-lg">
+                        </div>
+                        <div class="flex-1 text-center md:text-left">
+                            <h1 id="movieTitle" class="text-4xl md:text-5xl font-bold mb-4"></h1>
+                            <div class="flex flex-wrap justify-center md:justify-start gap-3 mb-4">
+                                <span id="movieRating" class="bg-black/70 px-3 py-1 rounded-full text-sm">
+                                    <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                    <span></span>
+                                </span>
+                                <span id="movieDuration" class="bg-black/70 px-3 py-1 rounded-full text-sm"></span>
+                                <span id="movieLanguage" class="bg-black/70 px-3 py-1 rounded-full text-sm"></span>
+                                <span id="movieAgeRating" class="bg-black/70 px-3 py-1 rounded-full text-sm"></span>
+                            </div>
+                            <div class="flex flex-wrap justify-center md:justify-start gap-2">
+                                <span id="movieGenres" class="flex gap-2"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Movie Information -->
+        <section class="container mx-auto px-4 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Content -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- Description -->
+                    <div>
+                        <h2 class="text-2xl font-bold mb-4 flex items-center">
+                            <i class="fas fa-info-circle text-blue-500 mr-3"></i>About
+                        </h2>
+                        <p id="movieDescription" class="text-gray-300 leading-relaxed"></p>
+                    </div>
+
+                    <!-- Cast & Crew -->
+                    <div>
+                        <h2 class="text-2xl font-bold mb-4 flex items-center">
+                            <i class="fas fa-users text-blue-500 mr-3"></i>Cast & Crew
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="bg-gray-800 p-4 rounded-lg">
+                                <h3 class="font-semibold text-blue-400 mb-2">Director</h3>
+                                <p id="movieDirector" class="text-gray-300"></p>
+                            </div>
+                            <div class="bg-gray-800 p-4 rounded-lg">
+                                <h3 class="font-semibold text-blue-400 mb-2">Cast</h3>
+                                <p id="movieCast" class="text-gray-300"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Additional Info -->
+                    <div>
+                        <h2 class="text-2xl font-bold mb-4 flex items-center">
+                            <i class="fas fa-film text-blue-500 mr-3"></i>Movie Information
+                        </h2>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-gray-800 p-4 rounded-lg text-center">
+                                <i class="fas fa-calendar text-blue-400 text-2xl mb-2"></i>
+                                <p class="text-sm text-gray-400">Release Date</p>
+                                <p id="movieReleaseDate" class="font-semibold"></p>
+                            </div>
+                            <div class="bg-gray-800 p-4 rounded-lg text-center">
+                                <i class="fas fa-clock text-blue-400 text-2xl mb-2"></i>
+                                <p class="text-sm text-gray-400">Duration</p>
+                                <p id="movieDurationInfo" class="font-semibold"></p>
+                            </div>
+                            <div class="bg-gray-800 p-4 rounded-lg text-center">
+                                <i class="fas fa-globe text-blue-400 text-2xl mb-2"></i>
+                                <p class="text-sm text-gray-400">Language</p>
+                                <p id="movieLanguageInfo" class="font-semibold"></p>
+                            </div>
+                            <div class="bg-gray-800 p-4 rounded-lg text-center">
+                                <i class="fas fa-tag text-blue-400 text-2xl mb-2"></i>
+                                <p class="text-sm text-gray-400">Price</p>
+                                <p id="moviePrice" class="font-semibold text-green-400"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <div class="space-y-6">
+                    <!-- Status Card -->
+                    <div class="bg-gray-800 p-6 rounded-lg">
+                        <h3 class="font-semibold mb-3">Status</h3>
+                        <span id="movieStatus" class="status-now-showing px-3 py-1 rounded-full text-sm font-medium"></span>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="bg-gray-800 p-6 rounded-lg">
+                        <h3 class="font-semibold mb-4">Quick Actions</h3>
+                        <div class="space-y-3">
+                            <button onclick="goToMovies()" class="w-full bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">
+                                <i class="fas fa-arrow-left mr-2"></i>Back to Movies
+                            </button>
+                            <button onclick="shareMovie()" class="w-full bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition">
+                                <i class="fas fa-share-alt mr-2"></i>Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Showtimes Section -->
+        <section class="container mx-auto px-4 py-8">
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-calendar-alt text-blue-500 mr-3"></i>
+                    Available Showtimes
+                </h2>
+
+                <!-- Shows Loading -->
+                <div id="showsLoading" class="text-center py-8">
+                    <i class="fas fa-spinner fa-spin text-3xl text-blue-500 mb-4"></i>
+                    <p class="text-gray-400">Loading showtimes...</p>
+                </div>
+
+                <!-- Shows Error -->
+                <div id="showsError" class="hidden text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-3xl text-red-500 mb-4"></i>
+                    <p class="text-gray-400 mb-4">Unable to load showtimes</p>
+                    <button onclick="loadShows()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition">
+                        <i class="fas fa-redo mr-2"></i>Retry
+                    </button>
+                </div>
+
+                <!-- Shows List -->
+                <div id="showsList" class="hidden space-y-4">
+                    <!-- Shows will be loaded here -->
+                </div>
+
+                <!-- No Shows -->
+                <div id="noShows" class="hidden text-center py-8">
+                    <i class="fas fa-calendar-times text-3xl text-gray-500 mb-4"></i>
+                    <p class="text-gray-400">No showtimes available</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700 mt-16">
+        <div class="container mx-auto px-4 py-8 text-center text-gray-400">
+            <p>&copy; 2026 Cinema Booking System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080/api/v1';
+        let currentMovie = null;
+        let currentShows = [];
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            const movieId = getMovieIdFromUrl();
+            if (movieId) {
+                loadMovieDetails(movieId);
+            } else {
+                showError();
+            }
+        });
+
+        // Get movie ID from URL
+        function getMovieIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // Load movie details
+        async function loadMovieDetails(movieId) {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/movies/${movieId}`);
+                if (!response.ok) throw new Error('Movie not found');
+                
+                currentMovie = await response.json();
+                displayMovieDetails(currentMovie);
+                loadShows(movieId);
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading movie details:', error);
+                showError();
+            }
+        }
+
+        // Load shows for the movie
+        async function loadShows(movieId) {
+            document.getElementById('showsLoading').classList.remove('hidden');
+            document.getElementById('showsList').classList.add('hidden');
+            document.getElementById('showsError').classList.add('hidden');
+            document.getElementById('noShows').classList.add('hidden');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/movies/${movieId}/shows`);
+                if (!response.ok) throw new Error('Failed to load shows');
+                
+                currentShows = await response.json();
+                displayShows(currentShows);
+            } catch (error) {
+                console.error('Error loading shows:', error);
+                document.getElementById('showsLoading').classList.add('hidden');
+                document.getElementById('showsError').classList.remove('hidden');
+            }
+        }
+
+        // Display movie details
+        function displayMovieDetails(movie) {
+            // Set basic info
+            document.getElementById('movieTitle').textContent = movie.title;
+            document.getElementById('movieDescription').textContent = movie.description || 'No description available';
+            document.getElementById('movieDirector').textContent = movie.director || 'N/A';
+            document.getElementById('movieCast').textContent = movie.cast || 'N/A';
+            
+            // Set metadata
+            document.getElementById('movieRating').querySelector('span').textContent = movie.rating || 'N/A';
+            document.getElementById('movieDuration').textContent = movie.duration || 'N/A';
+            document.getElementById('movieLanguage').textContent = movie.language || 'N/A';
+            document.getElementById('movieAgeRating').textContent = movie.ageRating || 'N/A';
+            
+            // Set additional info
+            document.getElementById('movieReleaseDate').textContent = formatDate(movie.releaseDate) || 'N/A';
+            document.getElementById('movieDurationInfo').textContent = movie.duration || 'N/A';
+            document.getElementById('movieLanguageInfo').textContent = movie.language || 'N/A';
+            document.getElementById('moviePrice').textContent = `₹${movie.price || '0'}`;
+            
+            // Set status
+            const statusElement = document.getElementById('movieStatus');
+            statusElement.textContent = movie.status || 'Now Showing';
+            statusElement.className = movie.status === 'Now Showing' ? 
+                'status-now-showing px-3 py-1 rounded-full text-sm font-medium' : 
+                'status-upcoming px-3 py-1 rounded-full text-sm font-medium';
+            
+            // Set genres
+            const genresContainer = document.getElementById('movieGenres');
+            if (movie.genre) {
+                const genres = movie.genre.split(',').map(g => g.trim());
+                genresContainer.innerHTML = genres.map(genre => 
+                    `<span class="genre-badge text-xs px-2 py-1 rounded">${genre}</span>`
+                ).join('');
+            } else {
+                genresContainer.innerHTML = '<span class="text-gray-400">No genres specified</span>';
+            }
+            
+            // Set images
+            const posterUrl = getPosterUrl(movie.imageUrl);
+            const backdropUrl = getPosterUrl(movie.backdropUrl || movie.imageUrl);
+            
+            document.getElementById('posterImage').src = posterUrl;
+            document.getElementById('posterImage').alt = movie.title;
+            document.getElementById('backdropImage').src = backdropUrl;
+            document.getElementById('backdropImage').alt = movie.title;
+            
+            // Set page title
+            document.title = `${movie.title} - Cinema Booking`;
+        }
+
+        // Display shows
+        function displayShows(shows) {
+            document.getElementById('showsLoading').classList.add('hidden');
+            
+            if (shows.length === 0) {
+                document.getElementById('noShows').classList.remove('hidden');
+                return;
+            }
+            
+            const showsList = document.getElementById('showsList');
+            showsList.innerHTML = shows.map(show => createShowRow(show)).join('');
+            showsList.classList.remove('hidden');
+        }
+
+        // Create show row HTML
+        function createShowRow(show) {
+            const seatClass = getSeatClass(show.availableSeats);
+            const seatIcon = getSeatIcon(show.availableSeats);
+            
+            return `
+                <div class="show-row bg-gray-700/50 rounded-lg p-4 flex items-center justify-between">
+                    <div class="flex-1">
+                        <div class="flex items-center gap-4 mb-2">
+                            <div class="text-center">
+                                <p class="text-sm text-gray-400">Date</p>
+                                <p class="font-semibold">${formatDate(show.showDate)}</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-400">Time</p>
+                                <p class="font-semibold">${formatTime(show.showTime)}</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-400">Screen</p>
+                                <p class="font-semibold">${show.screenName}</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-400">Price</p>
+                                <p class="font-semibold text-green-400">₹${show.ticketPrice}</p>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-sm text-gray-400">Available Seats</p>
+                                <p class="font-semibold ${seatClass} seat-indicator">
+                                    <i class="fas ${seatIcon} mr-1"></i>${show.availableSeats}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="ml-4">
+                        <button 
+                            onclick="bookShow(${show.showId})"
+                            class="bg-blue-500 hover:bg-blue-600 px-6 py-2 rounded-lg transition flex items-center"
+                        >
+                            <i class="fas fa-ticket-alt mr-2"></i>Book Now
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Get seat availability class
+        function getSeatClass(availableSeats) {
+            if (availableSeats > 50) return 'seat-high';
+            if (availableSeats > 20) return 'seat-medium';
+            return 'seat-low';
+        }
+
+        // Get seat availability icon
+        function getSeatIcon(availableSeats) {
+            if (availableSeats > 50) return 'fa-check-circle';
+            if (availableSeats > 20) return 'fa-exclamation-circle';
+            return 'fa-times-circle';
+        }
+
+        // Book show
+        function bookShow(showId) {
+            // Navigate to seat selection/booking page
+            window.location.href = 'seat-booking.html?showId=' + showId;
+        }
+
+        // Navigation functions
+        function goBack() {
+            window.history.back();
+        }
+
+        function goToMovies() {
+            window.location.href = 'movie-listing.html';
+        }
+
+        function shareMovie() {
+            if (navigator.share && currentMovie) {
+                navigator.share({
+                    title: currentMovie.title,
+                    text: currentMovie.description,
+                    url: window.location.href
+                }).catch(err => console.log('Share failed:', err));
+            } else {
+                // Fallback: copy to clipboard
+                navigator.clipboard.writeText(window.location.href).then(() => {
+                    alert('Movie link copied to clipboard!');
+                });
+            }
+        }
+
+        // Utility functions
+        function getPosterUrl(imageUrl) {
+            if (!imageUrl) {
+                return 'https://via.placeholder.com/400x600?text=No+Poster';
+            }
+            if (imageUrl.startsWith('http') || imageUrl.startsWith('/images/')) {
+                return imageUrl;
+            }
+            return `http://localhost:8080${imageUrl}`;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return null;
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function formatTime(timeString) {
+            if (!timeString) return 'N/A';
+            // Handle both "HH:mm" and "HH:mm:ss" formats
+            const time = timeString.split(':');
+            return `${time[0]}:${time[1]}`;
+        }
+
+        // Loading states
+        function showLoading() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('movieContent').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('movieContent').classList.remove('hidden');
+        }
+
+        function showError() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('movieContent').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

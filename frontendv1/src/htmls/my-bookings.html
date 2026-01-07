@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Bookings - Cinema Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .booking-card {
+            transition: all 0.3s ease;
+            border: 1px solid rgba(59, 130, 246, 0.1);
+        }
+        .booking-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        .status-confirmed {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        .status-cancelled {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+        .status-completed {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .filter-btn {
+            transition: all 0.3s ease;
+        }
+        .filter-btn.active {
+            background: #3b82f6;
+            color: white;
+        }
+        .empty-state {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .booking-actions {
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .booking-card:hover .booking-actions {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-xl sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <button onclick="goToMovies()" class="text-gray-300 hover:text-white transition">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </button>
+                    <h1 class="text-xl font-bold flex items-center">
+                        <i class="fas fa-list text-blue-500 mr-3"></i>
+                        My Bookings
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="text-sm text-gray-400">
+                        <i class="fas fa-user-circle mr-2"></i>
+                        <span id="userName">User</span>
+                    </div>
+                    <button onclick="goToMovies()" class="text-gray-300 hover:text-white transition">
+                        <i class="fas fa-home mr-2"></i>Home
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- User Info Bar -->
+    <section class="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center space-x-4">
+                    <div class="bg-blue-500/20 px-4 py-2 rounded-lg">
+                        <span class="text-blue-400 font-semibold">Total Bookings: </span>
+                        <span id="totalBookings" class="text-white font-bold">0</span>
+                    </div>
+                    <div class="bg-green-500/20 px-4 py-2 rounded-lg">
+                        <span class="text-green-400 font-semibold">Active: </span>
+                        <span id="activeBookings" class="text-white font-bold">0</span>
+                    </div>
+                </div>
+                <button onclick="refreshBookings()" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">
+                    <i class="fas fa-sync-alt mr-2"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Filters -->
+    <section class="bg-gray-800/30 backdrop-blur-sm border-b border-gray-700">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex flex-wrap gap-2">
+                <button onclick="filterBookings('all')" class="filter-btn active px-4 py-2 rounded-lg transition" data-filter="all">
+                    All Bookings
+                </button>
+                <button onclick="filterBookings('confirmed')" class="filter-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition" data-filter="confirmed">
+                    <i class="fas fa-check-circle mr-2"></i>Confirmed
+                </button>
+                <button onclick="filterBookings('completed')" class="filter-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition" data-filter="completed">
+                    <i class="fas fa-calendar-check mr-2"></i>Completed
+                </button>
+                <button onclick="filterBookings('cancelled')" class="filter-btn bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition" data-filter="cancelled">
+                    <i class="fas fa-times-circle mr-2"></i>Cancelled
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="container mx-auto px-4 py-8">
+        <div class="space-y-4">
+            <div class="skeleton h-32 rounded-lg"></div>
+            <div class="skeleton h-32 rounded-lg"></div>
+            <div class="skeleton h-32 rounded-lg"></div>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden container mx-auto px-4 py-16 text-center">
+        <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+        <h3 class="text-xl font-semibold mb-2">Unable to Load Bookings</h3>
+        <p class="text-gray-400 mb-4">Failed to load your booking history. Please try again.</p>
+        <button onclick="loadBookings()" class="bg-blue-500 hover:bg-blue-600 px-6 py-2 rounded-lg transition">
+            <i class="fas fa-redo mr-2"></i>Retry
+        </button>
+    </div>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden container mx-auto px-4 py-16 text-center empty-state">
+        <i class="fas fa-ticket-alt text-6xl text-gray-600 mb-4"></i>
+        <h3 class="text-xl font-semibold mb-2">No Bookings Found</h3>
+        <p class="text-gray-400 mb-6">You haven't made any bookings yet. Start by booking your favorite movies!</p>
+        <button onclick="goToMovies()" class="bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-lg transition">
+            <i class="fas fa-film mr-2"></i>Browse Movies
+        </button>
+    </div>
+
+    <!-- Bookings List -->
+    <main id="bookingsList" class="hidden container mx-auto px-4 py-8">
+        <div class="space-y-4">
+            <!-- Bookings will be loaded here -->
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700 mt-16">
+        <div class="container mx-auto px-4 py-8 text-center text-gray-400">
+            <p>&copy; 2026 Cinema Booking System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080/api/v1';
+        let allBookings = [];
+        let filteredBookings = [];
+        let currentFilter = 'all';
+        let userId = null;
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeUser();
+            loadBookings();
+        });
+
+        // Initialize user from localStorage
+        function initializeUser() {
+            const userData = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+            userId = userData.userId || 1; // Default to 1 for demo
+            document.getElementById('userName').textContent = userData.userName || 'Demo User';
+        }
+
+        // Load user bookings
+        async function loadBookings() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/users/${userId}/bookings`);
+                if (!response.ok) throw new Error('Failed to load bookings');
+                
+                allBookings = await response.json();
+                filteredBookings = [...allBookings];
+                displayBookings(filteredBookings);
+                updateStats();
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                showError();
+            }
+        }
+
+        // Filter bookings
+        function filterBookings(filter) {
+            currentFilter = filter;
+            
+            // Update filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                if (btn.dataset.filter === filter) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Filter bookings
+            if (filter === 'all') {
+                filteredBookings = [...allBookings];
+            } else {
+                filteredBookings = allBookings.filter(booking => booking.status.toLowerCase() === filter);
+            }
+
+            displayBookings(filteredBookings);
+        }
+
+        // Display bookings
+        function displayBookings(bookings) {
+            const bookingsList = document.getElementById('bookingsList');
+            const emptyState = document.getElementById('emptyState');
+
+            if (bookings.length === 0) {
+                bookingsList.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            bookingsList.classList.remove('hidden');
+            emptyState.classList.add('hidden');
+
+            bookingsList.innerHTML = bookings.map(booking => createBookingCard(booking)).join('');
+        }
+
+        // Create booking card HTML
+        function createBookingCard(booking) {
+            const statusClass = getStatusClass(booking.status);
+            const statusIcon = getStatusIcon(booking.status);
+            const canCancel = booking.status === 'CONFIRMED' && isFutureBooking(booking.date);
+            
+            return `
+                <div class="booking-card bg-gray-800 rounded-xl p-6 hover:bg-gray-750">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                        <!-- Booking Info -->
+                        <div class="flex-1">
+                            <div class="flex items-start justify-between mb-4">
+                                <div>
+                                    <h3 class="text-xl font-bold mb-2">${booking.movie}</h3>
+                                    <div class="flex items-center gap-4 text-gray-400 text-sm">
+                                        <span class="flex items-center">
+                                            <i class="fas fa-calendar mr-1"></i>
+                                            ${formatDate(booking.date)}
+                                        </span>
+                                        <span class="flex items-center">
+                                            <i class="fas fa-clock mr-1"></i>
+                                            ${booking.time}
+                                        </span>
+                                        <span class="flex items-center">
+                                            <i class="fas fa-couch mr-1"></i>
+                                            ${booking.seats || '2'} Seats
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="${statusClass} px-3 py-1 rounded-full text-sm font-medium flex items-center">
+                                        <i class="fas ${statusIcon} mr-1"></i>
+                                        ${booking.status}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Additional Details -->
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                                <div>
+                                    <p class="text-gray-400 mb-1">Order ID</p>
+                                    <p class="font-mono font-semibold">#${booking.orderId}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400 mb-1">Screen</p>
+                                    <p class="font-semibold">Screen 1</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400 mb-1">Amount</p>
+                                    <p class="font-semibold text-green-400">₹${booking.amount || '280'}</p>
+                                </div>
+                                <div>
+                                    <p class="text-gray-400 mb-1">Booked On</p>
+                                    <p class="font-semibold">${formatDate(new Date().toISOString())}</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="booking-actions flex flex-col sm:flex-row gap-3 lg:ml-4">
+                            <button 
+                                onclick="viewBookingDetails(${booking.orderId})"
+                                class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition flex items-center justify-center"
+                            >
+                                <i class="fas fa-eye mr-2"></i>View Details
+                            </button>
+                            ${canCancel ? `
+                                <button 
+                                    onclick="cancelBooking(${booking.orderId})"
+                                    class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded-lg transition flex items-center justify-center"
+                                >
+                                    <i class="fas fa-times-circle mr-2"></i>Cancel
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Get status class
+        function getStatusClass(status) {
+            switch (status.toUpperCase()) {
+                case 'CONFIRMED': return 'status-confirmed';
+                case 'CANCELLED': return 'status-cancelled';
+                case 'COMPLETED': return 'status-completed';
+                default: return 'status-confirmed';
+            }
+        }
+
+        // Get status icon
+        function getStatusIcon(status) {
+            switch (status.toUpperCase()) {
+                case 'CONFIRMED': return 'fa-check-circle';
+                case 'CANCELLED': return 'fa-times-circle';
+                case 'COMPLETED': return 'fa-calendar-check';
+                default: return 'fa-check-circle';
+            }
+        }
+
+        // Check if booking is in the future
+        function isFutureBooking(dateString) {
+            if (!dateString) return true;
+            const bookingDate = new Date(dateString);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            return bookingDate >= today;
+        }
+
+        // View booking details
+        function viewBookingDetails(orderId) {
+            window.location.href = 'booking-confirmation.html?orderId=' + orderId;
+        }
+
+        // Cancel booking
+        async function cancelBooking(orderId) {
+            if (!confirm(`Are you sure you want to cancel booking #${orderId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/bookings/${orderId}/cancel`, {
+                    method: 'POST'
+                });
+
+                if (!response.ok) throw new Error('Failed to cancel booking');
+
+                // Update local booking status
+                const booking = allBookings.find(b => b.orderId === orderId);
+                if (booking) {
+                    booking.status = 'CANCELLED';
+                }
+
+                // Re-filter and display
+                filterBookings(currentFilter);
+                updateStats();
+
+                alert('Booking cancelled successfully');
+            } catch (error) {
+                console.error('Error cancelling booking:', error);
+                alert('Failed to cancel booking. Please try again.');
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            const totalBookings = allBookings.length;
+            const activeBookings = allBookings.filter(b => b.status === 'CONFIRMED').length;
+            
+            document.getElementById('totalBookings').textContent = totalBookings;
+            document.getElementById('activeBookings').textContent = activeBookings;
+        }
+
+        // Refresh bookings
+        function refreshBookings() {
+            loadBookings();
+        }
+
+        // Navigation functions
+        function goToMovies() {
+            window.location.href = 'movie-listing.html';
+        }
+
+        // Utility functions
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        // Loading states
+        function showLoading() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('bookingsList').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('bookingsList').classList.remove('hidden');
+        }
+
+        function showError() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('bookingsList').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+            document.getElementById('emptyState').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

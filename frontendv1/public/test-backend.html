@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Backend Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">Backend API Test</h1>
+        
+        <div id="status" class="mb-4 p-4 bg-gray-800 rounded">
+            Testing backend connection...
+        </div>
+        
+        <div id="movies" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Movies will be loaded here -->
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080/api/v1';
+        
+        async function testBackend() {
+            const status = document.getElementById('status');
+            const moviesDiv = document.getElementById('movies');
+            
+            try {
+                status.innerHTML = 'Fetching movies from backend...';
+                status.className = 'mb-4 p-4 bg-blue-800 rounded';
+                
+                const response = await fetch(`${API_BASE_URL}/movies`);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const movies = await response.json();
+                
+                status.innerHTML = `✅ Success! Found ${movies.length} movies`;
+                status.className = 'mb-4 p-4 bg-green-800 rounded';
+                
+                moviesDiv.innerHTML = movies.slice(0, 6).map(movie => `
+                    <div class="bg-gray-800 p-4 rounded-lg">
+                        <h3 class="font-bold mb-2">${movie.title}</h3>
+                        <p class="text-sm text-gray-400 mb-2">${movie.genre}</p>
+                        <p class="text-sm">⭐ ${movie.rating}</p>
+                        <p class="text-sm">₹${movie.price}</p>
+                        <p class="text-xs mt-2 bg-blue-600 inline-block px-2 py-1 rounded">${movie.status}</p>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                status.innerHTML = `❌ Error: ${error.message}`;
+                status.className = 'mb-4 p-4 bg-red-800 rounded';
+                moviesDiv.innerHTML = '';
+            }
+        }
+        
+        // Test backend on page load
+        testBackend();
+    </script>
+</body>
+</html>

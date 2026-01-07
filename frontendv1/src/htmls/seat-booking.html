@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seat Selection - Cinema Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .seat-counter {
+            transition: all 0.3s ease;
+        }
+        .seat-counter:hover {
+            transform: scale(1.05);
+        }
+        .price-display {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .booking-card {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .success-animation {
+            animation: success 0.5s ease-out;
+        }
+        @keyframes success {
+            0% { transform: scale(0.8); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-xl sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <button onclick="goBack()" class="text-gray-300 hover:text-white transition">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </button>
+                    <h1 class="text-xl font-bold">Seat Selection</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="goToMovies()" class="text-gray-300 hover:text-white transition">
+                        <i class="fas fa-home mr-2"></i>Home
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Loading State -->
+    <div id="loadingState" class="container mx-auto px-4 py-8">
+        <div class="animate-pulse">
+            <div class="skeleton h-32 rounded-lg mb-8"></div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 skeleton h-96 rounded-lg"></div>
+                <div class="skeleton h-96 rounded-lg"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Error State -->
+    <div id="errorState" class="hidden container mx-auto px-4 py-16 text-center">
+        <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+        <h3 class="text-xl font-semibold mb-2">Unable to Load Show</h3>
+        <p class="text-gray-400 mb-4">Failed to load show details. Please try again.</p>
+        <button onclick="loadShowDetails()" class="bg-blue-500 hover:bg-blue-600 px-6 py-2 rounded-lg transition">
+            <i class="fas fa-redo mr-2"></i>Retry
+        </button>
+    </div>
+
+    <!-- Booking Content -->
+    <div id="bookingContent" class="hidden container mx-auto px-4 py-8">
+        <!-- Show Details Card -->
+        <section class="mb-8">
+            <div class="booking-card rounded-xl p-6 shadow-2xl">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+                    <div class="flex-1">
+                        <h2 id="movieTitle" class="text-2xl font-bold mb-4 flex items-center">
+                            <i class="fas fa-film text-blue-500 mr-3"></i>
+                            <span></span>
+                        </h2>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div class="bg-gray-800/50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-400 mb-1">Screen</p>
+                                <p id="screenName" class="font-semibold text-blue-400"></p>
+                            </div>
+                            <div class="bg-gray-800/50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-400 mb-1">Date</p>
+                                <p id="showDate" class="font-semibold"></p>
+                            </div>
+                            <div class="bg-gray-800/50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-400 mb-1">Time</p>
+                                <p id="showTime" class="font-semibold"></p>
+                            </div>
+                            <div class="bg-gray-800/50 p-3 rounded-lg">
+                                <p class="text-sm text-gray-400 mb-1">Available Seats</p>
+                                <p id="availableSeats" class="font-semibold text-green-400"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center lg:text-right">
+                        <p class="text-sm text-gray-400 mb-2">Price per seat</p>
+                        <p id="ticketPrice" class="text-3xl font-bold text-green-400"></p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Seat Selection Section -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Seat Selection UI -->
+            <div class="lg:col-span-2">
+                <div class="bg-gray-800 rounded-xl p-6 shadow-xl">
+                    <h3 class="text-xl font-bold mb-6 flex items-center">
+                        <i class="fas fa-couch text-blue-500 mr-3"></i>
+                        Select Number of Seats
+                    </h3>
+                    
+                    <!-- Simple Seat Counter -->
+                    <div class="text-center py-12">
+                        <p class="text-gray-400 mb-6">How many seats would you like to book?</p>
+                        
+                        <div class="flex items-center justify-center gap-6 mb-8">
+                            <button 
+                                onclick="decreaseSeats()"
+                                id="decreaseBtn"
+                                class="seat-counter bg-gray-700 hover:bg-gray-600 w-12 h-12 rounded-full flex items-center justify-center transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled
+                            >
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            
+                            <div class="text-center">
+                                <div id="seatCount" class="text-6xl font-bold text-blue-400 mb-2">0</div>
+                                <p class="text-gray-400">Seats</p>
+                            </div>
+                            
+                            <button 
+                                onclick="increaseSeats()"
+                                id="increaseBtn"
+                                class="seat-counter bg-blue-500 hover:bg-blue-600 w-12 h-12 rounded-full flex items-center justify-center transition"
+                            >
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+
+                        <!-- Quick Selection Buttons -->
+                        <div class="flex justify-center gap-3 mb-8">
+                            <button onclick="setSeats(1)" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">1</button>
+                            <button onclick="setSeats(2)" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">2</button>
+                            <button onclick="setSeats(3)" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">3</button>
+                            <button onclick="setSeats(4)" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">4</button>
+                            <button onclick="setSeats(5)" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">5</button>
+                            <button onclick="setSeats(6)" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">6</button>
+                        </div>
+
+                        <!-- Seat Availability Info -->
+                        <div class="bg-gray-700/50 rounded-lg p-4">
+                            <div class="flex items-center justify-center gap-6 text-sm">
+                                <div class="flex items-center">
+                                    <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                                    <span class="text-gray-400">Available: <span id="seatAvailability" class="text-green-400 font-semibold"></span></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visual Seat Map (Optional Enhancement) -->
+                    <div class="border-t border-gray-700 pt-6 mt-6">
+                        <div class="text-center text-gray-400 text-sm mb-4">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Seats will be automatically assigned for the best viewing experience
+                        </div>
+                        <div class="flex justify-center">
+                            <div class="grid grid-cols-8 gap-1">
+                                <!-- Simple seat visualization -->
+                                ${Array.from({length: 32}, (_, i) => 
+                                    `<div class="w-6 h-6 bg-gray-600 rounded ${i < 16 ? 'opacity-50' : ''}"></div>`
+                                ).join('')}
+                            </div>
+                        </div>
+                        <div class="text-center text-gray-500 text-xs mt-2">Screen</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booking Summary -->
+            <div class="lg:col-span-1">
+                <div class="booking-card rounded-xl p-6 shadow-xl sticky top-24">
+                    <h3 class="text-xl font-bold mb-6 flex items-center">
+                        <i class="fas fa-receipt text-blue-500 mr-3"></i>
+                        Booking Summary
+                    </h3>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Movie</span>
+                            <span id="summaryMovie" class="font-semibold"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Show</span>
+                            <span id="summaryShow" class="font-semibold"></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Seats</span>
+                            <span id="summarySeats" class="font-semibold">0</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Price per seat</span>
+                            <span id="summaryPrice" class="font-semibold">₹0</span>
+                        </div>
+                        <div class="border-t border-gray-700 pt-4">
+                            <div class="flex justify-between text-lg font-bold">
+                                <span>Total Amount</span>
+                                <span id="totalAmount" class="text-green-400">₹0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Booking Button -->
+                    <button 
+                        id="confirmBookingBtn"
+                        onclick="confirmBooking()"
+                        disabled
+                        class="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-gray-600 disabled:cursor-not-allowed px-6 py-3 rounded-lg font-semibold transition flex items-center justify-center"
+                    >
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Confirm Booking
+                    </button>
+
+                    <!-- Booking Info -->
+                    <div class="mt-4 text-center text-gray-400 text-sm">
+                        <i class="fas fa-lock mr-1"></i>
+                        Secure booking • No payment required
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Success Modal -->
+    <div id="successModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded-xl p-8 max-w-md w-full mx-4 success-animation">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-check text-white text-2xl"></i>
+                </div>
+                <h3 class="text-2xl font-bold mb-2">Booking Confirmed!</h3>
+                <p class="text-gray-400 mb-6">Your booking has been successfully created.</p>
+                
+                <div class="bg-gray-700 rounded-lg p-4 mb-6 text-left">
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-400">Order ID:</span>
+                        <span id="orderId" class="font-semibold"></span>
+                    </div>
+                    <div class="flex justify-between mb-2">
+                        <span class="text-gray-400">Status:</span>
+                        <span class="text-green-400 font-semibold">CONFIRMED</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Total Amount:</span>
+                        <span id="confirmedAmount" class="font-semibold text-green-400"></span>
+                    </div>
+                </div>
+                
+                <div class="flex gap-3">
+                    <button 
+                        onclick="viewBookingDetails()"
+                        class="flex-1 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded-lg transition"
+                    >
+                        <i class="fas fa-eye mr-2"></i>View Details
+                    </button>
+                    <button 
+                        onclick="goToMovies()"
+                        class="flex-1 bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition"
+                    >
+                        <i class="fas fa-home mr-2"></i>Home
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700 mt-16">
+        <div class="container mx-auto px-4 py-8 text-center text-gray-400">
+            <p>&copy; 2026 Cinema Booking System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080/api/v1';
+        let currentShow = null;
+        let selectedSeats = 0;
+        let maxAvailableSeats = 0;
+        let ticketPrice = 0;
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            const showId = getShowIdFromUrl();
+            if (showId) {
+                loadShowDetails(showId);
+            } else {
+                showError();
+            }
+        });
+
+        // Get show ID from URL
+        function getShowIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('showId');
+        }
+
+        // Load show details
+        async function loadShowDetails(showId) {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/shows/${showId}`);
+                if (!response.ok) throw new Error('Show not found');
+                
+                currentShow = await response.json();
+                displayShowDetails(currentShow);
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading show details:', error);
+                showError();
+            }
+        }
+
+        // Display show details
+        function displayShowDetails(show) {
+            // Set show information
+            document.getElementById('movieTitle').querySelector('span').textContent = show.movieTitle;
+            document.getElementById('screenName').textContent = show.screenName;
+            document.getElementById('showDate').textContent = formatDate(show.showDate);
+            document.getElementById('showTime').textContent = formatTime(show.showTime);
+            document.getElementById('availableSeats').textContent = show.availableSeats;
+            document.getElementById('ticketPrice').textContent = `₹${show.price}`;
+            
+            // Set booking summary
+            document.getElementById('summaryMovie').textContent = show.movieTitle;
+            document.getElementById('summaryShow').textContent = `${formatDate(show.showDate)} at ${formatTime(show.showTime)}`;
+            document.getElementById('summaryPrice').textContent = `₹${show.price}`;
+            
+            // Set variables
+            maxAvailableSeats = show.availableSeats;
+            ticketPrice = show.price;
+            
+            // Update seat availability display
+            document.getElementById('seatAvailability').textContent = show.availableSeats;
+            
+            // Reset seat selection
+            selectedSeats = 0;
+            updateSeatDisplay();
+        }
+
+        // Seat selection functions
+        function increaseSeats() {
+            if (selectedSeats < maxAvailableSeats && selectedSeats < 10) {
+                selectedSeats++;
+                updateSeatDisplay();
+            }
+        }
+
+        function decreaseSeats() {
+            if (selectedSeats > 0) {
+                selectedSeats--;
+                updateSeatDisplay();
+            }
+        }
+
+        function setSeats(count) {
+            if (count <= maxAvailableSeats && count <= 10) {
+                selectedSeats = count;
+                updateSeatDisplay();
+            }
+        }
+
+        function updateSeatDisplay() {
+            // Update seat count display
+            document.getElementById('seatCount').textContent = selectedSeats;
+            document.getElementById('summarySeats').textContent = selectedSeats;
+            
+            // Calculate total amount
+            const total = selectedSeats * ticketPrice;
+            document.getElementById('totalAmount').textContent = `₹${total}`;
+            
+            // Update button states
+            const decreaseBtn = document.getElementById('decreaseBtn');
+            const increaseBtn = document.getElementById('increaseBtn');
+            const confirmBtn = document.getElementById('confirmBookingBtn');
+            
+            decreaseBtn.disabled = selectedSeats === 0;
+            increaseBtn.disabled = selectedSeats >= maxAvailableSeats || selectedSeats >= 10;
+            confirmBtn.disabled = selectedSeats === 0;
+            
+            // Add pulse animation to confirm button when seats are selected
+            if (selectedSeats > 0) {
+                confirmBtn.classList.add('pulse-animation');
+            } else {
+                confirmBtn.classList.remove('pulse-animation');
+            }
+        }
+
+        // Confirm booking
+        async function confirmBooking() {
+            if (selectedSeats === 0) return;
+            
+            const confirmBtn = document.getElementById('confirmBookingBtn');
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            
+            try {
+                // Get user ID from localStorage (assuming it's stored there from login)
+                const userData = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+                const userId = userData.userId || 1; // Default to 1 for demo
+                
+                const bookingData = {
+                    showId: currentShow.showId,
+                    seats: selectedSeats,
+                    userId: userId
+                };
+                
+                const response = await fetch(`${API_BASE_URL}/bookings`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bookingData)
+                });
+                
+                if (!response.ok) throw new Error('Booking failed');
+                
+                const result = await response.json();
+                showSuccessModal(result);
+                
+            } catch (error) {
+                console.error('Error creating booking:', error);
+                alert('Booking failed. Please try again.');
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Confirm Booking';
+            }
+        }
+
+        // Show success modal
+        function showSuccessModal(bookingResult) {
+            document.getElementById('orderId').textContent = bookingResult.orderId;
+            document.getElementById('confirmedAmount').textContent = `₹${bookingResult.totalAmount}`;
+            document.getElementById('successModal').classList.remove('hidden');
+        }
+
+        // View booking details
+        function viewBookingDetails() {
+            const orderId = document.getElementById('orderId').textContent;
+            // Navigate to booking confirmation page
+            window.location.href = 'booking-confirmation.html?orderId=' + orderId;
+        }
+
+        // Navigation functions
+        function goBack() {
+            window.history.back();
+        }
+
+        function goToMovies() {
+            window.location.href = 'movie-listing.html';
+        }
+
+        // Utility functions
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric' 
+            });
+        }
+
+        function formatTime(timeString) {
+            if (!timeString) return 'N/A';
+            const time = timeString.split(':');
+            return `${time[0]}:${time[1]}`;
+        }
+
+        // Loading states
+        function showLoading() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('bookingContent').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('bookingContent').classList.remove('hidden');
+        }
+
+        function showError() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('bookingContent').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search & Filter Bar - Cinema Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .search-container {
+            position: relative;
+        }
+        .search-input {
+            transition: all 0.3s ease;
+        }
+        .search-input:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .filter-dropdown {
+            transition: all 0.3s ease;
+        }
+        .filter-dropdown:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+            border-color: rgba(59, 130, 246, 0.3);
+        }
+        .active-filter {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+            border-color: #3b82f6;
+        }
+        .suggestion-item {
+            transition: all 0.2s ease;
+        }
+        .suggestion-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+            padding-left: 1rem;
+        }
+        .filter-tag {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .search-loading {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-xl sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <button onclick="goToMovies()" class="text-gray-300 hover:text-white transition">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </button>
+                    <h1 class="text-xl font-bold flex items-center">
+                        <i class="fas fa-search text-blue-500 mr-3"></i>
+                        Search & Filter Demo
+                    </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="goToMovies()" class="text-gray-300 hover:text-white transition">
+                        <i class="fas fa-home mr-2"></i>Home
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Search & Filter Bar Section -->
+        <section class="mb-8">
+            <div class="bg-gray-800 rounded-xl p-6 shadow-2xl">
+                <h2 class="text-2xl font-bold mb-6 flex items-center">
+                    <i class="fas fa-filter text-blue-500 mr-3"></i>
+                    Search & Filter Movies
+                </h2>
+
+                <!-- Search Bar -->
+                <div class="mb-6">
+                    <div class="search-container">
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                id="searchInput"
+                                placeholder="Search movies by title..."
+                                class="search-input w-full bg-gray-700 text-white px-12 py-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
+                            >
+                            <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-xl"></i>
+                            <div id="searchLoading" class="hidden absolute right-4 top-1/2 transform -translate-y-1/2">
+                                <i class="fas fa-spinner fa-spin text-blue-500 text-xl search-loading"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- Search Suggestions Dropdown -->
+                        <div id="searchSuggestions" class="hidden absolute w-full bg-gray-700 rounded-lg mt-2 shadow-xl z-50 max-h-60 overflow-y-auto">
+                            <!-- Suggestions will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Options -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <!-- Genre Filter -->
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Genre</label>
+                        <select 
+                            id="genreFilter"
+                            class="filter-dropdown w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                        >
+                            <option value="">All Genres</option>
+                            <option value="Action">Action</option>
+                            <option value="Comedy">Comedy</option>
+                            <option value="Drama">Drama</option>
+                            <option value="Sci-Fi">Sci-Fi</option>
+                            <option value="Horror">Horror</option>
+                            <option value="Adventure">Adventure</option>
+                            <option value="Biography">Biography</option>
+                            <option value="Musical">Musical</option>
+                            <option value="Fantasy">Fantasy</option>
+                            <option value="Thriller">Thriller</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Status</label>
+                        <select 
+                            id="statusFilter"
+                            class="filter-dropdown w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                        >
+                            <option value="">All Status</option>
+                            <option value="Now Showing">Now Showing</option>
+                            <option value="Coming Soon">Coming Soon</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    </div>
+
+                    <!-- Sort Filter -->
+                    <div class="relative">
+                        <label class="block text-sm font-medium text-gray-400 mb-2">Sort By</label>
+                        <select 
+                            id="sortFilter"
+                            class="filter-dropdown w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                        >
+                            <option value="title">Title (A-Z)</option>
+                            <option value="rating">Rating (High to Low)</option>
+                            <option value="price">Price (Low to High)</option>
+                            <option value="date">Release Date (Newest)</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Active Filters -->
+                <div id="activeFilters" class="hidden mb-6">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-medium text-gray-400">Active Filters:</h3>
+                        <button onclick="clearAllFilters()" class="text-sm text-blue-400 hover:text-blue-300 transition">
+                            <i class="fas fa-times mr-1"></i>Clear All
+                        </button>
+                    </div>
+                    <div id="filterTags" class="flex flex-wrap gap-2">
+                        <!-- Filter tags will be added here -->
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="flex flex-wrap gap-3">
+                    <button onclick="applyFilters()" class="bg-blue-500 hover:bg-blue-600 px-6 py-3 rounded-lg font-semibold transition flex items-center">
+                        <i class="fas fa-search mr-2"></i>Apply Filters
+                    </button>
+                    <button onclick="clearAllFilters()" class="bg-gray-700 hover:bg-gray-600 px-6 py-3 rounded-lg font-semibold transition flex items-center">
+                        <i class="fas fa-redo mr-2"></i>Reset
+                    </button>
+                    <button onclick="saveSearch()" class="bg-purple-500 hover:bg-purple-600 px-6 py-3 rounded-lg font-semibold transition flex items-center">
+                        <i class="fas fa-bookmark mr-2"></i>Save Search
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section>
+            <div class="bg-gray-800 rounded-xl p-6 shadow-xl">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-xl font-bold flex items-center">
+                        <i class="fas fa-film text-blue-500 mr-3"></i>
+                        Search Results
+                    </h3>
+                    <div class="flex items-center gap-4">
+                        <span id="resultCount" class="text-gray-400">0 movies found</span>
+                        <div class="flex gap-2">
+                            <button onclick="toggleView('grid')" id="gridViewBtn" class="p-2 bg-blue-500 rounded transition">
+                                <i class="fas fa-th"></i>
+                            </button>
+                            <button onclick="toggleView('list')" id="listViewBtn" class="p-2 bg-gray-700 rounded transition">
+                                <i class="fas fa-list"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div id="resultsLoading" class="hidden text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-blue-500 mb-4"></i>
+                    <p class="text-gray-400">Searching movies...</p>
+                </div>
+
+                <!-- Results Grid -->
+                <div id="resultsGrid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <!-- Results will be loaded here -->
+                </div>
+
+                <!-- Results List -->
+                <div id="resultsList" class="hidden space-y-4">
+                    <!-- Results will be loaded here in list format -->
+                </div>
+
+                <!-- No Results -->
+                <div id="noResults" class="hidden text-center py-12">
+                    <i class="fas fa-search text-6xl text-gray-600 mb-4"></i>
+                    <h3 class="text-xl font-semibold mb-2">No movies found</h3>
+                    <p class="text-gray-400 mb-4">Try adjusting your search or filters</p>
+                    <button onclick="clearAllFilters()" class="bg-blue-500 hover:bg-blue-600 px-6 py-2 rounded-lg transition">
+                        Clear Filters
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Popular Searches -->
+        <section class="mt-8">
+            <div class="bg-gray-800 rounded-xl p-6 shadow-xl">
+                <h3 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-fire text-orange-500 mr-3"></i>
+                    Popular Searches
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="quickSearch('Avatar')" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">Avatar</button>
+                    <button onclick="quickSearch('Action')" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">Action Movies</button>
+                    <button onclick="quickSearch('Sci-Fi')" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">Sci-Fi</button>
+                    <button onclick="quickSearch('Batman')" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">Batman</button>
+                    <button onclick="quickSearch('Marvel')" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">Marvel</button>
+                    <button onclick="setGenreFilter('Comedy')" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">Comedy</button>
+                    <button onclick="setStatusFilter('Now Showing')" class="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded-lg transition">Now Showing</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700 mt-16">
+        <div class="container mx-auto px-4 py-8 text-center text-gray-400">
+            <p>&copy; 2026 Cinema Booking System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080/api/v1';
+        let allMovies = [];
+        let filteredMovies = [];
+        let currentView = 'grid';
+        let searchTimeout = null;
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAllMovies();
+            setupEventListeners();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            const searchInput = document.getElementById('searchInput');
+            const genreFilter = document.getElementById('genreFilter');
+            const statusFilter = document.getElementById('statusFilter');
+            const sortFilter = document.getElementById('sortFilter');
+
+            // Search with debounce
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                const query = e.target.value.trim();
+                
+                if (query.length > 0) {
+                    searchTimeout = setTimeout(() => {
+                        performSearch(query);
+                    }, 500);
+                } else {
+                    hideSuggestions();
+                    applyFilters();
+                }
+            });
+
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.search-container')) {
+                    hideSuggestions();
+                }
+            });
+
+            // Filter changes
+            genreFilter.addEventListener('change', applyFilters);
+            statusFilter.addEventListener('change', applyFilters);
+            sortFilter.addEventListener('change', applyFilters);
+        }
+
+        // Load all movies
+        async function loadAllMovies() {
+            showResultsLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/movies`);
+                if (!response.ok) throw new Error('Failed to load movies');
+                
+                allMovies = await response.json();
+                filteredMovies = [...allMovies];
+                displayResults(filteredMovies);
+                hideResultsLoading();
+            } catch (error) {
+                console.error('Error loading movies:', error);
+                showError();
+            }
+        }
+
+        // Perform search
+        async function performSearch(query) {
+            showSearchLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/movies/search?query=${encodeURIComponent(query)}`);
+                if (!response.ok) throw new Error('Search failed');
+                
+                const searchResults = await response.json();
+                displaySuggestions(searchResults, query);
+                hideSearchLoading();
+            } catch (error) {
+                console.error('Error searching:', error);
+                hideSearchLoading();
+            }
+        }
+
+        // Display search suggestions
+        function displaySuggestions(movies, query) {
+            const suggestionsDiv = document.getElementById('searchSuggestions');
+            
+            if (movies.length === 0) {
+                suggestionsDiv.innerHTML = '<div class="p-4 text-gray-400">No movies found</div>';
+            } else {
+                suggestionsDiv.innerHTML = movies.slice(0, 5).map(movie => `
+                    <div class="suggestion-item p-4 cursor-pointer border-b border-gray-600 last:border-b-0" onclick="selectMovie(${movie.id}, '${movie.title}')">
+                        <div class="flex items-center gap-3">
+                            <img src="${getPosterUrl(movie.imageUrl)}" alt="${movie.title}" class="w-12 h-16 object-cover rounded">
+                            <div>
+                                <div class="font-semibold">${highlightMatch(movie.title, query)}</div>
+                                <div class="text-sm text-gray-400">${movie.genre} • ${movie.rating} ⭐</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+            
+            suggestionsDiv.classList.remove('hidden');
+        }
+
+        // Highlight search match
+        function highlightMatch(text, query) {
+            const regex = new RegExp(`(${query})`, 'gi');
+            return text.replace(regex, '<mark class="bg-blue-500 text-white">$1</mark>');
+        }
+
+        // Select movie from suggestions
+        function selectMovie(movieId, movieTitle) {
+            document.getElementById('searchInput').value = movieTitle;
+            hideSuggestions();
+            applyFilters();
+        }
+
+        // Hide suggestions
+        function hideSuggestions() {
+            document.getElementById('searchSuggestions').classList.add('hidden');
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const genreFilter = document.getElementById('genreFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+            const sortFilter = document.getElementById('sortFilter').value;
+
+            // Filter movies
+            filteredMovies = allMovies.filter(movie => {
+                // Search filter
+                if (searchTerm && !movie.title.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+
+                // Genre filter
+                if (genreFilter && !movie.genre.toLowerCase().includes(genreFilter.toLowerCase())) {
+                    return false;
+                }
+
+                // Status filter
+                if (statusFilter && movie.status !== statusFilter) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            // Sort movies
+            sortMovies(sortFilter);
+
+            // Display results
+            displayResults(filteredMovies);
+            updateActiveFilters();
+        }
+
+        // Sort movies
+        function sortMovies(sortBy) {
+            switch (sortBy) {
+                case 'title':
+                    filteredMovies.sort((a, b) => a.title.localeCompare(b.title));
+                    break;
+                case 'rating':
+                    filteredMovies.sort((a, b) => (b.rating || 0) - (a.rating || 0));
+                    break;
+                case 'price':
+                    filteredMovies.sort((a, b) => (a.price || 0) - (b.price || 0));
+                    break;
+                case 'date':
+                    filteredMovies.sort((a, b) => new Date(b.releaseDate || 0) - new Date(a.releaseDate || 0));
+                    break;
+            }
+        }
+
+        // Display results
+        function displayResults(movies) {
+            const resultCount = document.getElementById('resultCount');
+            const resultsGrid = document.getElementById('resultsGrid');
+            const resultsList = document.getElementById('resultsList');
+            const noResults = document.getElementById('noResults');
+
+            resultCount.textContent = `${movies.length} movie${movies.length !== 1 ? 's' : ''} found`;
+
+            if (movies.length === 0) {
+                resultsGrid.classList.add('hidden');
+                resultsList.classList.add('hidden');
+                noResults.classList.remove('hidden');
+                return;
+            }
+
+            resultsGrid.classList.remove('hidden');
+            resultsList.classList.add('hidden');
+            noResults.classList.add('hidden');
+
+            if (currentView === 'grid') {
+                resultsGrid.innerHTML = movies.map(movie => createMovieCard(movie)).join('');
+            } else {
+                resultsList.innerHTML = movies.map(movie => createMovieListItem(movie)).join('');
+            }
+        }
+
+        // Create movie card for grid view
+        function createMovieCard(movie) {
+            const posterUrl = getPosterUrl(movie.imageUrl);
+            return `
+                <div class="bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:transform hover:scale-105 transition" onclick="viewMovie(${movie.id})">
+                    <img src="${posterUrl}" alt="${movie.title}" class="w-full h-64 object-cover">
+                    <div class="p-4">
+                        <h3 class="font-bold mb-2 line-clamp-1">${movie.title}</h3>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-blue-400">⭐ ${movie.rating || 'N/A'}</span>
+                            <span class="text-green-400">₹${movie.price || '0'}</span>
+                        </div>
+                        <div class="mt-2">
+                            <span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded">${movie.status || 'Now Showing'}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Create movie list item for list view
+        function createMovieListItem(movie) {
+            const posterUrl = getPosterUrl(movie.imageUrl);
+            return `
+                <div class="bg-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition" onclick="viewMovie(${movie.id})">
+                    <div class="flex gap-4">
+                        <img src="${posterUrl}" alt="${movie.title}" class="w-20 h-28 object-cover rounded">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-lg mb-2">${movie.title}</h3>
+                            <p class="text-gray-400 text-sm mb-2 line-clamp-2">${movie.description || 'No description available'}</p>
+                            <div class="flex items-center gap-4 text-sm">
+                                <span class="text-blue-400">⭐ ${movie.rating || 'N/A'}</span>
+                                <span class="text-green-400">₹${movie.price || '0'}</span>
+                                <span class="bg-blue-500/20 text-blue-400 text-xs px-2 py-1 rounded">${movie.status || 'Now Showing'}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Update active filters display
+        function updateActiveFilters() {
+            const activeFiltersDiv = document.getElementById('activeFilters');
+            const filterTagsDiv = document.getElementById('filterTags');
+            const searchTerm = document.getElementById('searchInput').value;
+            const genreFilter = document.getElementById('genreFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            const filters = [];
+            
+            if (searchTerm) filters.push({ type: 'search', value: searchTerm, label: `Search: "${searchTerm}"` });
+            if (genreFilter) filters.push({ type: 'genre', value: genreFilter, label: `Genre: ${genreFilter}` });
+            if (statusFilter) filters.push({ type: 'status', value: statusFilter, label: `Status: ${statusFilter}` });
+
+            if (filters.length === 0) {
+                activeFiltersDiv.classList.add('hidden');
+            } else {
+                activeFiltersDiv.classList.remove('hidden');
+                filterTagsDiv.innerHTML = filters.map(filter => `
+                    <span class="filter-tag bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                        ${filter.label}
+                        <button onclick="removeFilter('${filter.type}')" class="hover:text-blue-300">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </span>
+                `).join('');
+            }
+        }
+
+        // Remove individual filter
+        function removeFilter(filterType) {
+            switch (filterType) {
+                case 'search':
+                    document.getElementById('searchInput').value = '';
+                    break;
+                case 'genre':
+                    document.getElementById('genreFilter').value = '';
+                    break;
+                case 'status':
+                    document.getElementById('statusFilter').value = '';
+                    break;
+            }
+            applyFilters();
+        }
+
+        // Clear all filters
+        function clearAllFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('genreFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            document.getElementById('sortFilter').value = 'title';
+            applyFilters();
+        }
+
+        // Quick search functions
+        function quickSearch(query) {
+            document.getElementById('searchInput').value = query;
+            applyFilters();
+        }
+
+        function setGenreFilter(genre) {
+            document.getElementById('genreFilter').value = genre;
+            applyFilters();
+        }
+
+        function setStatusFilter(status) {
+            document.getElementById('statusFilter').value = status;
+            applyFilters();
+        }
+
+        // Toggle view
+        function toggleView(view) {
+            currentView = view;
+            const gridBtn = document.getElementById('gridViewBtn');
+            const listBtn = document.getElementById('listViewBtn');
+            
+            if (view === 'grid') {
+                gridBtn.classList.add('bg-blue-500');
+                gridBtn.classList.remove('bg-gray-700');
+                listBtn.classList.add('bg-gray-700');
+                listBtn.classList.remove('bg-blue-500');
+            } else {
+                listBtn.classList.add('bg-blue-500');
+                listBtn.classList.remove('bg-gray-700');
+                gridBtn.classList.add('bg-gray-700');
+                gridBtn.classList.remove('bg-blue-500');
+            }
+            
+            displayResults(filteredMovies);
+        }
+
+        // Save search
+        function saveSearch() {
+            const searchData = {
+                query: document.getElementById('searchInput').value,
+                genre: document.getElementById('genreFilter').value,
+                status: document.getElementById('statusFilter').value,
+                sort: document.getElementById('sortFilter').value
+            };
+            
+            localStorage.setItem('savedSearch', JSON.stringify(searchData));
+            alert('Search saved successfully!');
+        }
+
+        // View movie details
+        function viewMovie(movieId) {
+            window.location.href = `movie-details.html?id=${movieId}`;
+        }
+
+        // Navigation
+        function goToMovies() {
+            window.location.href = 'movie-listing.html';
+        }
+
+        // Utility functions
+        function getPosterUrl(imageUrl) {
+            if (!imageUrl) {
+                return 'https://via.placeholder.com/300x450?text=No+Poster';
+            }
+            if (imageUrl.startsWith('http') || imageUrl.startsWith('/images/')) {
+                return imageUrl;
+            }
+            return `http://localhost:8080${imageUrl}`;
+        }
+
+        // Loading states
+        function showSearchLoading() {
+            document.getElementById('searchLoading').classList.remove('hidden');
+        }
+
+        function hideSearchLoading() {
+            document.getElementById('searchLoading').classList.add('hidden');
+        }
+
+        function showResultsLoading() {
+            document.getElementById('resultsLoading').classList.remove('hidden');
+            document.getElementById('resultsGrid').classList.add('hidden');
+            document.getElementById('resultsList').classList.add('hidden');
+            document.getElementById('noResults').classList.add('hidden');
+        }
+
+        function hideResultsLoading() {
+            document.getElementById('resultsLoading').classList.add('hidden');
+        }
+
+        function showError() {
+            // Implement error display
+            console.error('Error loading data');
+        }
+    </script>
+</body>
+</html>

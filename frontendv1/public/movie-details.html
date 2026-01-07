@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Movie Details</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+  <!-- header -->
+  <header class="bg-gray-800 shadow fixed w-full top-0 z-40">
+    <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+      <a href="/movie-listing.html" class="text-2xl font-bold text-blue-400">
+        <i class="fas fa-film mr-2"></i>Cinema Booking
+      </a>
+      <button id="profileBtn" class="text-3xl text-white"><i class="fas fa-user-circle"></i></button>
+    </div>
+  </header>
+
+  <!-- profile popup -->
+  <div id="profilePopup" class="hidden fixed right-4 top-20 bg-gray-800 p-6 rounded-lg w-64 shadow-lg z-50">
+    <h3 class="font-bold mb-2">My Profile</h3>
+    <p id="profileName" class="mb-1"></p>
+    <p id="profileEmail" class="mb-4 text-sm text-gray-400"></p>
+    <button onclick="logout()" class="w-full bg-red-600 hover:bg-red-700 py-2 rounded">Logout</button>
+  </div>
+
+  <main id="content" class="pt-24 pb-16 max-w-5xl mx-auto px-4"></main>
+
+  <script>
+    const API_BASE = 'http://localhost:8080/api/v1';
+
+    /* user popup */
+    const ud = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+    document.getElementById('profileName').textContent = ud.userName || 'Guest';
+    document.getElementById('profileEmail').textContent = ud.email || '';
+    document.getElementById('profileBtn').onclick = () => document.getElementById('profilePopup').classList.toggle('hidden');
+    function logout(){ localStorage.removeItem('loginResponse'); window.location.href='/'; }
+
+    /* helpers */
+    function qs(name){return new URLSearchParams(window.location.search).get(name);}    
+    function getPoster(url){
+      if(!url||url.trim()===''){const imgs=['avatar.webp','fallout.webp','predator.webp','stranger%20things.webp','wicked%20For%20good.webp'];return '/images/'+imgs[Math.floor(Math.random()*imgs.length)];}
+      if(url.startsWith('http')||url.startsWith('/images/')) return url;
+      return 'http://localhost:8080'+url;
+    }
+
+    /* render */
+    async function load(){
+      const id=qs('id');
+      if(!id){document.getElementById('content').innerHTML='<p class="text-center text-gray-400">No movie id</p>';return;}
+      try{
+        const m=await (await fetch(`${API_BASE}/movies/${id}`)).json();
+        const shows=await (await fetch(`${API_BASE}/movies/${id}/shows`)).json();
+        render(m,shows);
+      }catch(e){console.error(e);document.getElementById('content').innerHTML='<p class="text-center text-red-500">Failed to load movie.</p>';}
+    }
+
+    function render(movie,shows){
+      const html=`<div class="flex flex-col md:flex-row gap-8">
+        <img src="${getPoster(movie.imageUrl)}" alt="${movie.title}" class="w-full md:w-64 rounded-lg object-cover" onerror="this.src='https://via.placeholder.com/400x600?text=No+Poster'">
+        <div class="flex-1">
+          <h2 class="text-3xl font-bold mb-2">${movie.title}</h2>
+          <p class="text-gray-400 mb-4">${movie.description||''}</p>
+          <div class="flex flex-wrap gap-2 mb-6">
+            ${(movie.genre||'').split(',').map(g=>`<span class="text-xs bg-blue-600/20 border border-blue-600 px-2 py-1 rounded">${g.trim()}</span>`).join('')}
+          </div>
+          <h3 class="text-xl font-semibold mb-3">Available Shows</h3>
+          <div class="space-y-3">
+            ${shows.map(s=>`<div class="flex justify-between items-center bg-gray-800 p-3 rounded">
+              <span>${s.showDate} ${s.showTime}</span>
+              <button class="bg-blue-500 hover:bg-blue-600 px-4 py-1 rounded" onclick="book(${s.id ?? s.showId})">Book Now</button>
+            </div>`).join('')}
+          </div>
+        </div>
+      </div>`;
+      document.getElementById('content').innerHTML=html;
+    }
+
+    function book(showId){window.location.href='/seat-booking.html?showId='+showId;}
+
+    load();
+  </script>
+</body>
+</html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinema Movie Booking - Movies</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .movie-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .movie-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        .poster-container {
+            position: relative;
+            overflow: hidden;
+        }
+        .poster-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.8) 100%);
+            z-index: 1;
+        }
+        .movie-poster {
+            transition: transform 0.3s ease;
+        }
+        .movie-card:hover .movie-poster {
+            transform: scale(1.05);
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: loading 1.5s infinite;
+        }
+        @keyframes loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .genre-badge {
+            background: rgba(59, 130, 246, 0.1);
+            color: #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+        .status-now-showing {
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+        .status-upcoming {
+            background: rgba(251, 191, 36, 0.1);
+            color: #f59e0b;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 shadow-xl sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-film text-blue-500 text-2xl"></i>
+                    <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                        Cinema Booking
+                    </h1>
+                </div>
+                <div class="flex items-center justify-between">
+                    <div class="text-gray-400 text-sm">
+                        <i class="fas fa-user-circle mr-2"></i>
+                        <span id="userName">Guest User</span>
+                    </div>
+                    
+                    <!-- Profile Icon -->
+                    <div class="relative">
+                        <button onclick="showUserProfile()" class="bg-gray-700 hover:bg-gray-600 p-2 rounded-full transition">
+                            <i class="fas fa-user text-blue-400"></i>
+                        </button>
+                        
+                        <!-- Profile Dropdown -->
+                        <div id="profileDropdown" class="hidden absolute right-0 top-12 mt-2 w-64 bg-gray-800 rounded-lg shadow-xl border border-gray-700 z-50">
+                            <div class="p-4 border-b border-gray-700">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-semibold text-blue-400">User Profile</h3>
+                                    <button onclick="hideUserProfile()" class="text-gray-400 hover:text-white transition">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                
+                                <div class="space-y-4">
+                                    <div class="flex items-center space-x-3">
+                                        <img id="profileAvatar" src="../src/htmls/images/avatar.webp" alt="Profile" class="w-16 h-16 rounded-full">
+                                    </div>
+                                    <div>
+                                        <p id="profileName" class="font-semibold text-white">Guest User</p>
+                                        <p id="profileEmail" class="text-sm text-gray-400">Not logged in</p>
+                                        <button onclick="goToLogin()" class="mt-2 bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded transition">
+                                            <i class="fas fa-sign-in-alt mr-2"></i>
+                                            Login
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search and Filters -->
+    <section class="bg-gray-800/50 backdrop-blur-sm sticky top-16 z-40 border-b border-gray-700">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex flex-col md:flex-row gap-4">
+                <!-- Search Bar -->
+                <div class="flex-1">
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="searchInput"
+                            placeholder="Search movies by title..."
+                            class="w-full bg-gray-700 text-white px-4 py-3 pl-12 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        >
+                        <i class="fas fa-search absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                    </div>
+                </div>
+                
+                <!-- Genre Filter -->
+                <div class="md:w-48">
+                    <select 
+                        id="genreFilter"
+                        class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    >
+                        <option value="">All Genres</option>
+                        <option value="Action">Action</option>
+                        <option value="Comedy">Comedy</option>
+                        <option value="Drama">Drama</option>
+                        <option value="Sci-Fi">Sci-Fi</option>
+                        <option value="Horror">Horror</option>
+                        <option value="Adventure">Adventure</option>
+                        <option value="Biography">Biography</option>
+                        <option value="Musical">Musical</option>
+                    </select>
+                </div>
+                
+                <!-- Status Filter -->
+                <div class="md:w-48">
+                    <select 
+                        id="statusFilter"
+                        class="w-full bg-gray-700 text-white px-4 py-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                    >
+                        <option value="">All Status</option>
+                        <option value="Now Showing">Now Showing</option>
+                        <option value="Coming Soon">Coming Soon</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Movies Grid -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Loading State -->
+        <div id="loadingState" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Skeleton Cards -->
+            <div class="skeleton h-96 rounded-lg"></div>
+            <div class="skeleton h-96 rounded-lg"></div>
+            <div class="skeleton h-96 rounded-lg"></div>
+            <div class="skeleton h-96 rounded-lg"></div>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="hidden text-center py-16">
+            <i class="fas fa-exclamation-triangle text-6xl text-red-500 mb-4"></i>
+            <h3 class="text-xl font-semibold mb-2">Oops! Something went wrong</h3>
+            <p class="text-gray-400 mb-4">Failed to load movies. Please try again.</p>
+            <button onclick="loadMovies()" class="bg-blue-500 hover:bg-blue-600 px-6 py-2 rounded-lg transition">
+                <i class="fas fa-redo mr-2"></i>Retry
+            </button>
+        </div>
+
+        <!-- Movies Grid -->
+        <div id="moviesGrid" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Movies will be loaded here -->
+        </div>
+
+        <!-- No Results -->
+        <div id="noResults" class="hidden text-center py-16">
+            <i class="fas fa-film text-6xl text-gray-600 mb-4"></i>
+            <h3 class="text-xl font-semibold mb-2">No movies found</h3>
+            <p class="text-gray-400">Try adjusting your search or filters</p>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700 mt-16">
+        <div class="container mx-auto px-4 py-8 text-center text-gray-400">
+            <p>&copy; 2026 Cinema Booking System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080/api/v1';
+        let allMovies = [];
+        let filteredMovies = [];
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            const userData = getUserData();
+            const userName = document.getElementById('userName');
+            const profileName = document.getElementById('profileName');
+            const profileEmail = document.getElementById('profileEmail');
+            
+            if (userData && userData.userName) {
+                userName.textContent = userData.userName;
+                profileName.textContent = userData.userName;
+                profileEmail.textContent = userData.email || 'user@example.com';
+            }
+            loadMovies();
+            setupEventListeners();
+        });
+
+        // Setup event listeners
+        function setupEventListeners() {
+            const searchInput = document.getElementById('searchInput');
+            const genreFilter = document.getElementById('genreFilter');
+            const statusFilter = document.getElementById('statusFilter');
+
+            // Search with debounce
+            let searchTimeout;
+            searchInput.addEventListener('input', (e) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    filterMovies();
+                }, 500);
+            });
+
+            genreFilter.addEventListener('change', filterMovies);
+            statusFilter.addEventListener('change', filterMovies);
+        }
+
+        // Load all movies
+        async function loadMovies() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE_URL}/movies`);
+                if (!response.ok) throw new Error('Failed to fetch movies');
+                
+                allMovies = await response.json();
+                filteredMovies = [...allMovies];
+                displayMovies(filteredMovies);
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading movies:', error);
+                showError();
+            }
+        }
+
+        // Filter movies based on search and filters
+        function filterMovies() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const genreFilter = document.getElementById('genreFilter').value;
+            const statusFilter = document.getElementById('statusFilter').value;
+
+            filteredMovies = allMovies.filter(movie => {
+                // Search filter
+                if (searchTerm && !movie.title.toLowerCase().includes(searchTerm)) {
+                    return false;
+                }
+
+                // Genre filter
+                if (genreFilter && !movie.genre.toLowerCase().includes(genreFilter.toLowerCase())) {
+                    return false;
+                }
+
+                // Status filter
+                if (statusFilter && movie.status !== statusFilter) {
+                    return false;
+                }
+
+                return true;
+            });
+
+            displayMovies(filteredMovies);
+        }
+
+        // Display movies in the grid
+        function displayMovies(movies) {
+            const moviesGrid = document.getElementById('moviesGrid');
+            const noResults = document.getElementById('noResults');
+
+            if (movies.length === 0) {
+                moviesGrid.classList.add('hidden');
+                noResults.classList.remove('hidden');
+                return;
+            }
+
+            moviesGrid.classList.remove('hidden');
+            noResults.classList.add('hidden');
+
+            moviesGrid.innerHTML = movies.map(movie => createMovieCard(movie)).join('');
+        }
+
+        // Create movie card HTML
+        function createMovieCard(movie) {
+            const posterUrl = getPosterUrl(movie.imageUrl);
+            const genres = movie.genre ? movie.genre.split(',').map(g => g.trim()).slice(0, 2) : [];
+            const statusClass = movie.status === 'Now Showing' ? 'status-now-showing' : 'status-upcoming';
+            
+            return `
+                <div class="movie-card bg-gray-800 rounded-lg overflow-hidden cursor-pointer" onclick="viewMovieDetails(${movie.id})">
+                    <div class="poster-container h-64">
+                        <img 
+                            src="${posterUrl}" 
+                            alt="${movie.title}" 
+                            class="movie-poster w-full h-full object-cover"
+                            onerror="this.src='https://via.placeholder.com/400x600?text=No+Poster'"
+                        >
+                        <div class="absolute top-2 right-2">
+                            <span class="bg-black/70 px-2 py-1 rounded text-sm flex items-center">
+                                <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                ${movie.rating || 'N/A'}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg mb-2 line-clamp-1">${movie.title}</h3>
+                        
+                        <div class="flex flex-wrap gap-1 mb-3">
+                            ${genres.map(genre => `<span class="genre-badge text-xs px-2 py-1 rounded">${genre}</span>`).join('')}
+                        </div>
+                        
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="${statusClass} text-xs px-2 py-1 rounded font-medium">
+                                ${movie.status || 'Now Showing'}
+                            </span>
+                            <span class="text-blue-400 font-semibold">₹${movie.price || '0'}</span>
+                        </div>
+                        
+                        <p class="text-gray-400 text-sm mb-4 line-clamp-2">
+                            ${movie.description || 'No description available'}
+                        </p>
+                        
+                        <div class="flex gap-2">
+                            <button 
+                                onclick="event.stopPropagation(); viewMovieDetails(${movie.id})"
+                                class="flex-1 bg-gray-700 hover:bg-gray-600 px-3 py-2 rounded text-sm transition"
+                            >
+                                <i class="fas fa-info-circle mr-1"></i> Details
+                            </button>
+                            <button 
+                                onclick="event.stopPropagation(); bookMovie(${movie.id})"
+                                class="flex-1 bg-blue-500 hover:bg-blue-600 px-3 py-2 rounded text-sm transition"
+                            >
+                                <i class="fas fa-ticket-alt mr-1"></i> Book
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Get poster URL
+        function getPosterUrl(imageUrl) {
+            if (!imageUrl || imageUrl.trim() === '') {
+                // Use random placeholder images from frontend images folder
+                const placeholderImages = [
+                    'avatar.webp',
+                    'fallout.webp', 
+                    'predator.webp',
+                    'stranger things.webp',
+                    'wicked For good.webp'
+                ];
+                const randomImage = placeholderImages[Math.floor(Math.random() * placeholderImages.length)];
+                return `../src/htmls/images/${randomImage}`;
+            }
+            if (imageUrl.startsWith('http') || imageUrl.startsWith('/images/')) {
+                return imageUrl;
+            }
+            return `http://localhost:8080${imageUrl}`;
+        }
+
+        // View movie details
+        function viewMovieDetails(movieId) {
+            // Navigate to movie details page
+            window.location.href = 'movie-details.html?id=' + movieId;
+        }
+
+        // Book movie
+        function bookMovie(movieId) {
+            // Navigate to movie details page first to select show
+            window.location.href = 'movie-details.html?id=' + movieId;
+        }
+
+        // Show user profile dropdown
+        function showUserProfile() {
+            const dropdown = document.getElementById('profileDropdown');
+            dropdown.classList.toggle('hidden');
+        }
+
+        // Hide user profile dropdown
+        function hideUserProfile() {
+            const dropdown = document.getElementById('profileDropdown');
+            dropdown.classList.add('hidden');
+        }
+
+        // Go to login page
+        function goToLogin() {
+            window.location.href = '../login-response.html';
+        }
+
+        // Get user data from localStorage
+        function getUserData() {
+            const userData = JSON.parse(localStorage.getItem('loginResponse') || '{}');
+            return userData;
+        }
+
+        // Loading states
+        function showLoading() {
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('moviesGrid').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('noResults').classList.add('hidden');
+        }
+
+        function hideLoading() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('moviesGrid').classList.remove('hidden');
+        }
+
+        function showError() {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('moviesGrid').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+            document.getElementById('noResults').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

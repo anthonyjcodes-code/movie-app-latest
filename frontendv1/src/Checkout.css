@@ -1,0 +1,88 @@
+.checkout-container {
+  padding: 20px;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.checkout-container h1 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 30px;
+}
+
+.order-summary {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.order-summary h2 {
+  margin-top: 0;
+  color: #333;
+  text-align: center;
+}
+
+.movie-details, .booking-details {
+  margin-bottom: 20px;
+}
+
+.movie-details h3, .booking-details h3 {
+  color: #555;
+  border-bottom: 2px solid #667eea;
+  padding-bottom: 5px;
+  margin-bottom: 10px;
+}
+
+.movie-details p, .booking-details p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.actions {
+  text-align: center;
+}
+
+.confirm-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.confirm-btn:hover:not(:disabled) {
+  background: #5a6fd8;
+}
+
+.confirm-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.success-message {
+  background: #d4edda;
+  color: #155724;
+  padding: 20px;
+  border-radius: 8px;
+  border: 1px solid #c3e6cb;
+}
+
+.success-message h3 {
+  margin-top: 0;
+  color: #155724;
+}
+
+.success-message p {
+  margin: 5px 0;
+}
+
+.error {
+  text-align: center;
+  padding: 50px;
+  font-size: 18px;
+  color: #dc3545;
+}
